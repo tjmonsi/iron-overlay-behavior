@@ -64,6 +64,7 @@ context. You should place this element as a child of `<body>` whenever possible.
         observer: '_openedChanged',
         type: Boolean,
         value: false,
+        reflectToAttribute: true,
         notify: true
       },
 
@@ -82,7 +83,8 @@ context. You should place this element as a child of `<body>` whenever possible.
        */
       withBackdrop: {
         observer: '_withBackdropChanged',
-        type: Boolean
+        type: Boolean,
+        reflectToAttribute: true
       },
 
       /**
@@ -158,14 +160,6 @@ context. You should place this element as a child of `<body>` whenever possible.
 
     listeners: {
       'iron-resize': '_onIronResize'
-    },
-
-    /**
-     * The backdrop element.
-     * @type {Element}
-     */
-    get backdropElement() {
-      return this._manager.backdropElement;
     },
 
     /**
@@ -300,7 +294,7 @@ context. You should place this element as a child of `<body>` whenever possible.
         return;
       }
       this._overlaySetup = true;
-      this.style.outline = 'none';
+      this.style.outline = this.withBackdrop ? '' : 'none';
       this.style.display = 'none';
     },
 
@@ -362,9 +356,7 @@ context. You should place this element as a child of `<body>` whenever possible.
         this.removeAttribute('tabindex');
         this.__shouldRemoveTabIndex = false;
       }
-      if (this.opened && this.isAttached) {
-        this._manager.trackBackdrop();
-      }
+      this.style.outline = this.withBackdrop ? '' : 'none';
     },
 
     /**

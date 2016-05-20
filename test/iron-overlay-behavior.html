@@ -27,15 +27,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
     <link rel="import" href="test-buttons.html">
     <link rel="import" href="test-menu-button.html">
 
-    <style is="custom-style">
-      iron-overlay-backdrop {
-        /* For quicker tests */
-        --iron-overlay-backdrop: {
-          transition: none;
-        }
-      }
-    </style>
-
   </head>
 
   <body>
@@ -100,6 +91,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
       <template>
         <test-overlay with-backdrop>
           Overlay with backdrop
+          <button>click</button>
         </test-overlay>
       </template>
     </test-fixture>
@@ -792,44 +784,21 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           overlay = fixture('backdrop');
         });
 
-        test('backdrop is opened when overlay is opened', function(done) {
-          assert.isOk(overlay.backdropElement, 'backdrop is defined');
+        test('with-backdrop blocks interactions when opened', function(done) {
           runAfterOpen(overlay, function() {
-            assert.isTrue(overlay.backdropElement.opened, 'backdrop is opened');
-            assert.isOk(overlay.backdropElement.parentNode, 'backdrop is inserted in the DOM');
-            done();
-          });
-        });
-
-        test('backdrop appears behind the overlay', function(done) {
-          runAfterOpen(overlay, function() {
-            styleZ = parseInt(window.getComputedStyle(overlay).zIndex, 10);
-            backdropStyleZ = parseInt(window.getComputedStyle(overlay.backdropElement).zIndex, 10);
-            assert.isTrue(styleZ > backdropStyleZ, 'overlay has higher z-index than backdrop');
-            done();
-          });
-        });
-
-        test('backdrop is removed when overlay is closed', function(done) {
-          runAfterOpen(overlay, function() {
+            assert.equal(overlay, document.elementFromPoint(1, 1), 'interaction outside overlay blocked');
             runAfterClose(overlay, function() {
-              assert.isFalse(overlay.backdropElement.opened, 'backdrop is closed');
-              assert.isNotOk(overlay.backdropElement.parentNode, 'backdrop is removed from the DOM');
-              assert.lengthOf(document.querySelectorAll('iron-overlay-backdrop'), 0, 'no backdrop elements on body');
+              assert.notEqual(overlay, document.elementFromPoint(1, 1), 'interaction back to normal');
               done();
             });
           });
         });
 
-        test('backdrop is removed when the element is removed from DOM', function(done) {
+        test('backdrop appears behind the overlay', function(done) {
           runAfterOpen(overlay, function() {
-            Polymer.dom(overlay).parentNode.removeChild(overlay);
-            // Ensure detached is executed.
-            Polymer.dom.flush();
-            assert.isFalse(overlay.backdropElement.opened, 'backdrop is closed');
-            assert.isNotOk(overlay.backdropElement.parentNode, 'backdrop is removed from the DOM');
-            assert.lengthOf(document.querySelectorAll('iron-overlay-backdrop'), 0, 'no backdrop elements on body');
-            assert.isNotOk(overlay._manager.currentOverlay(), 'currentOverlay ok');
+            var button = Polymer.dom(overlay).querySelector('button');
+            var rect = button.getBoundingClientRect();
+            assert.equal(button, document.elementFromPoint(rect.left + 1, rect.top + 1), 'backdrop behind overlay content');
             done();
           });
         });
@@ -846,8 +815,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         test('updating with-backdrop to false closes backdrop', function(done) {
           runAfterOpen(overlay, function() {
             overlay.withBackdrop = false;
-            assert.isFalse(overlay.backdropElement.opened, 'backdrop is closed');
-            assert.isNotObject(overlay.backdropElement.parentNode, 'backdrop is removed from document');
+            assert.notEqual(overlay, document.elementFromPoint(1, 1), 'interaction back to normal');
             done();
           });
         });
@@ -855,8 +823,7 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
         test('backdrop is removed when toggling overlay opened', function(done) {
           overlay.open();
           runAfterClose(overlay, function() {
-            assert.isFalse(overlay.backdropElement.opened, 'backdrop is closed');
-            assert.isNotOk(overlay.backdropElement.parentNode, 'backdrop is removed from document');
+            assert.notEqual(overlay, document.elementFromPoint(1, 1), 'interaction back to normal');
             done();
           });
         });
@@ -1033,46 +1000,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
           overlay1.withBackdrop = overlay2.withBackdrop = overlay3.withBackdrop = true;
         });
 
-        test('multiple overlays share the same backdrop', function() {
-          assert.isTrue(overlay1.backdropElement === overlay2.backdropElement, 'overlay1 and overlay2 have the same backdrop element');
-          assert.isTrue(overlay1.backdropElement === overlay3.backdropElement, 'overlay1 and overlay3 have the same backdrop element');
-        });
-
-        test('only one iron-overlay-backdrop in the DOM', function(done) {
-          // Open them all.
-          overlay1.opened = true;
-          overlay2.opened = true;
-          runAfterOpen(overlay3, function() {
-            assert.lengthOf(document.querySelectorAll('iron-overlay-backdrop'), 1, 'only one backdrop element in the DOM');
-            done();
-          });
-        });
-
-        test('iron-overlay-backdrop is removed from the DOM when all overlays with backdrop are closed', function(done) {
-          // Open & close them all.
-          overlay1.opened = true;
-          overlay2.opened = true;
-          runAfterOpen(overlay3, function() {
-            overlay1.opened = overlay2.opened = overlay3.opened = false;
-            Polymer.dom.flush();
-            assert.lengthOf(document.querySelectorAll('iron-overlay-backdrop'), 0, 'backdrop element removed from the DOM');
-            done();
-          });
-        });
-
-        test('newest overlay appear on top', function(done) {
-          runAfterOpen(overlay1, function() {
-            runAfterOpen(overlay2, function() {
-              var styleZ = parseInt(window.getComputedStyle(overlay1).zIndex, 10);
-              var style1Z = parseInt(window.getComputedStyle(overlay2).zIndex, 10);
-              var bgStyleZ = parseInt(window.getComputedStyle(overlay1.backdropElement).zIndex, 10);
-              assert.isTrue(style1Z > styleZ, 'overlay2 has higher z-index than overlay1');
-              assert.isTrue(styleZ > bgStyleZ, 'overlay1 has higher z-index than backdrop');
-              done();
-            });
-          });
-        });
-
         test('click events handled only by top overlay', function(done) {
           var btn = document.createElement('button');
           btn.addEventListener('tap', overlay2.close.bind(overlay2));
@@ -1082,20 +1009,6 @@ subject to an additional IP rights grant found at http://polymer.github.io/PATEN
               MockInteractions.tap(btn);
               assert.isFalse(overlay2.opened, 'overlay2 closed');
               assert.isTrue(overlay1.opened, 'overlay1 still opened');
-              done();
-            });
-          });
-        });
-
-        test('updating with-backdrop updates z-index', function(done) {
-          runAfterOpen(overlay1, function() {
-            runAfterOpen(overlay2, function() {
-              overlay1.withBackdrop = false;
-              var styleZ = parseInt(window.getComputedStyle(overlay1).zIndex, 10);
-              var style1Z = parseInt(window.getComputedStyle(overlay2).zIndex, 10);
-              var bgStyleZ = parseInt(window.getComputedStyle(overlay1.backdropElement).zIndex, 10);
-              assert.isTrue(style1Z > bgStyleZ, 'overlay2 has higher z-index than backdrop');
-              assert.isTrue(styleZ < bgStyleZ, 'overlay1 has lower z-index than backdrop');
               done();
             });
           });

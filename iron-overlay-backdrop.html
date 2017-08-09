@@ -8,7 +8,7 @@ Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
 -->
 
-<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../polymer/polymer-element.html">
 
 <!--
 `iron-overlay-backdrop` is a backdrop used by `Polymer.IronOverlayBehavior`. It should be a
@@ -59,80 +59,83 @@ Custom property | Description | Default
 (function() {
 'use strict';
 
-  Polymer({
+  class IronOverlayBackdrop extends Polymer.Element {
+    static get is () { return 'iron-overlay-backdrop' }
 
-    is: 'iron-overlay-backdrop',
-
-    properties: {
-
-      /**
-       * Returns true if the backdrop is opened.
-       */
-      opened: {
-        reflectToAttribute: true,
-        type: Boolean,
-        value: false,
-        observer: '_openedChanged'
+    static get properties () {
+      return {
+        /**
+        * Returns true if the backdrop is opened.
+        */
+        opened: {
+          reflectToAttribute: true,
+          type: Boolean,
+          value: false,
+          observer: '_openedChanged'
+        }
       }
+    }
 
-    },
+    static get listeners () {
+      return {
+        'transitionend': '_onTransitionend'
+      }
+    }
 
-    listeners: {
-      'transitionend': '_onTransitionend'
-    },
-
-    created: function() {
+    constructor () {
+      super()
       // Used to cancel previous requestAnimationFrame calls when opened changes.
       this.__openedRaf = null;
-    },
+    }
 
-    attached: function() {
+    connectedCallback () {
+      super.connectedCallback()
       this.opened && this._openedChanged(this.opened);
-    },
+    }
 
     /**
      * Appends the backdrop to document body if needed.
      */
-    prepare: function() {
+    prepare () {
       if (this.opened && !this.parentNode) {
-        Polymer.dom(document.body).appendChild(this);
+        document.body.appendChild(this);
       }
-    },
+    }
 
     /**
      * Shows the backdrop.
      */
-    open: function() {
+    open () {
       this.opened = true;
-    },
+    }
 
     /**
      * Hides the backdrop.
      */
-    close: function() {
+    close () {
       this.opened = false;
-    },
+    }
 
     /**
      * Removes the backdrop from document body if needed.
      */
-    complete: function() {
+    complete () {
       if (!this.opened && this.parentNode === document.body) {
-        Polymer.dom(this.parentNode).removeChild(this);
+        this.parentNode.removeChild(this);
       }
-    },
+    }
 
-    _onTransitionend: function(event) {
+    _onTransitionend (event) {
       if (event && event.target === this) {
         this.complete();
       }
-    },
+    }
 
     /**
      * @param {boolean} opened
      * @private
      */
-    _openedChanged: function(opened) {
+    _openedChanged (opened) {
       if (opened) {
         // Auto-attach.
         this.prepare();
@@ -161,8 +164,9 @@ Custom property | Description | Default
         this.toggleClass('opened', this.opened);
       }.bind(this));
     }
-  });
+  }
 
+  window.customElements.define(IronOverlayBackdrop.is, IronOverlayBackdrop)
 })();
 
 </script>
